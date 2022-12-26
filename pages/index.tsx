@@ -43,20 +43,22 @@ Situation:
     setIsGenerating(false);
   };
 
-  const login = async () => {
+  const getSummary = async () => {
     // setIsLoading(true)
     // setError(null)
+    console.log("!!!userInput..", userInput);
 
     const response = await fetch(`${BASE_URL}/api/openai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userInput: "Give me detective story title" }),
+      body: JSON.stringify({ userInput }),
     });
     const json = await response.json();
 
     if (!response.ok) {
       // setIsLoading(false)
       // setError(json.error)
+      console.log("!!!!response not ok Error:", json.error);
     }
     if (response.ok) {
       console.log("res json: ", JSON.stringify(json));
@@ -74,66 +76,109 @@ Situation:
     setUserInput(event.target.value);
   };
 
+  let fileReader;
+
+  const handleFileRead = async (e) => {
+    const content = fileReader.result;
+
+    const contentArray = content.match(/[\s\S]{1,3000}/g);
+    console.log("!!! contentArray.length:", contentArray.length);
+    setApiOutput("");
+    // … do something with the 'content' …
+
+    const results = await Promise.all(
+      contentArray.map(async (chunk, index) => {
+        if (index < 5) {
+          const response = await fetch(`${BASE_URL}/api/openai`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userInput: chunk.replace(/(\r\n|\n|\r)/gm, ""),
+            }),
+          });
+          const json = await response.json();
+
+          if (!response.ok) {
+            setIsLoading(false);
+            setError(json.error);
+            console.log("!!!!response not ok Error:", json.error);
+          }
+          if (response.ok) {
+            console.log("res json: ", JSON.stringify(json));
+          }
+
+          const { output } = json;
+          console.log("OpenAI replied...", output.text);
+
+          setApiOutput((prev) => `${prev} ${output.text}`);
+          setIsGenerating(false);
+        }
+
+        return chunk;
+      })
+    );
+  };
+
+  const handleFileChosen = (file) => {
+    fileReader = new FileReader();
+    fileReader.onloadend = handleFileRead;
+    fileReader.readAsText(file);
+  };
+
   return (
     <div className="root">
       <div className="container">
         <div className="header">
           <div className="header-title">
-            <h1>Advise your friend</h1>
+            <h1>Get summary of your document</h1>
           </div>
           <div className="header-subtitle">
-            <h2>Describe your situation</h2>
+            <h2>Upload txt file and get the summary of the content</h2>
           </div>
         </div>
-        {/* Add this code here*/}
+
+        <input
+          type="file"
+          id="file"
+          className={
+            isGenerating ? "generate-button loading" : "generate-button"
+          }
+          accept=".txt"
+          onChange={(e) => handleFileChosen(e.target.files[0])}
+        />
 
         <div className="prompt-container">
-          <textarea
-            placeholder="start typing here"
-            className="prompt-box"
-            value={userInput}
-            onChange={onUserChangedText}
-          />
-          <div className="prompt-buttons">
+          {/* <div className="prompt-buttons">
             <a
               className={
                 isGenerating ? "generate-button loading" : "generate-button"
               }
-              onClick={login}
+              onClick={getSummary}
             >
               <div className="generate">
-                {isGenerating ? <span class="loader"></span> : <p>Generate</p>}
+                {isGenerating ? (
+                  <span class="loader"></span>
+                ) : (
+                  <p>Generate Summary</p>
+                )}
               </div>
             </a>
-          </div>
+          </div> */}
 
           {/* New code I added here */}
           {apiOutput && (
             <div className="output">
               <div className="output-header-container">
                 <div className="output-header">
-                  <h3>Output</h3>
+                  <h3>Summary</h3>
                 </div>
               </div>
               <div className="output-content">
-                <p>{apiOutput}</p>
+                <p contenteditable="true">{apiOutput}</p>
               </div>
             </div>
           )}
         </div>
-      </div>
-      <div className="badge-container grow">
-        <a
-          href="https://buildspace.so/builds/ai-writer"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <div className="badge">
-            <img src="" alt="buildspace logo" />
-            {/* <image src={buildspaceLogo} alt="buildspace logo" /> */}
-            <p>build with buildspace</p>
-          </div>
-        </a>
       </div>
     </div>
   );
