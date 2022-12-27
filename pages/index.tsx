@@ -83,7 +83,90 @@ Situation:
 
     const contentArray = content.match(/[\s\S]{1,3000}/g);
     console.log("!!! contentArray.length:", contentArray.length);
+    // console.log("contentArray[2] ", contentArray[2]);
     setApiOutput("");
+
+    const firstInput =
+      "this is the starting fragment of a large document. tell me what type of document it is and give me a summary";
+
+    // … do something with the 'content' …
+
+    const results = await Promise.all(
+      contentArray.map(async (chunk, index) => {
+        if (index == 0) {
+          const response = await fetch(`${BASE_URL}/api/openai`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userInput: `${firstInput} ${chunk.replace(/(\r\n|\n|\r)/gm, "")}`,
+            }),
+          });
+          const json = await response.json();
+
+          if (!response.ok) {
+            setIsLoading(false);
+            setError(json.error);
+            console.log("!!!!response not ok Error:", json.error);
+          }
+          if (response.ok) {
+            console.log("res json: ", JSON.stringify(json));
+          }
+
+          const { output } = json;
+          console.log("OpenAI replied...", output.text);
+
+          // setApiOutput((prev) => `${prev} ${output.text}`);
+          setApiOutput(output.text);
+          setIsGenerating(false);
+        }
+
+        if (index > 0 && index < 25) {
+          const response = await fetch(`${BASE_URL}/api/openai`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userInput: `This is the summary of the beginnig of the document: \n${apiOutput}\n This is the next fragment of the same document:${chunk.replace(
+                /(\r\n|\n|\r)/gm,
+                ""
+              )} \n Give me the summary of the whole document:`,
+            }),
+          });
+          const json = await response.json();
+
+          if (!response.ok) {
+            setIsLoading(false);
+            setError(json.error);
+            console.log("!!!!response not ok Error:", json.error);
+          }
+          if (response.ok) {
+            console.log("res json: ", JSON.stringify(json));
+          }
+
+          const { output } = json;
+          console.log("OpenAI replied...", output.text);
+
+          // setApiOutput((prev) => `${prev} ${output.text}`);
+          setApiOutput(output.text);
+          setIsGenerating(false);
+        }
+
+        return chunk;
+      })
+    );
+  };
+
+  const w1_handleFileRead = async (e) => {
+    const content = fileReader.result;
+
+    const contentArray = content.match(/[\s\S]{1,3000}/g);
+    console.log("!!! contentArray.length:", contentArray.length);
+    console.log("contentArray[0] ", contentArray[2]);
+    setApiOutput("");
+
+    // this is the starting fragment of a large document. tell me what type of document it is and give me a summary
+
+    return;
+
     // … do something with the 'content' …
 
     const results = await Promise.all(
