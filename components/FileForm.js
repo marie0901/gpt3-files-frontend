@@ -1,63 +1,49 @@
 import { useState } from "react";
-import { useFilesContext } from "../hooks/useFilesContext";
-import { useAuthContext } from "../hooks/useAuthContext";
 
 const FileForm = () => {
-  const { dispatch } = useFilesContext();
-  const { user } = useAuthContext();
-
-  const [title, setTitle] = useState("");
-  const [error, setError] = useState(null);
-  const [emptyFields, setEmptyFields] = useState([]);
-
+  const [image, setImage] = useState({ preview: "", data: "" });
+  const [status, setStatus] = useState("");
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!user) {
-      setError("You must be logged in");
-      return;
-    }
-
-    const file = { title: "Default title" };
-
-    const response = await fetch("/api/files", {
+    let formData = new FormData();
+    formData.append("file", image.data);
+    const response = await fetch("http://localhost:4000/file", {
       method: "POST",
-      body: JSON.stringify(file),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user.token}`,
-      },
+      body: formData,
     });
-    const json = await response.json();
+    if (response) setStatus(response.statusText);
+  };
 
-    if (!response.ok) {
-      setError(json.error);
-      setEmptyFields(json.emptyFields);
-    }
-    if (response.ok) {
-      setTitle("");
-      setError(null);
-      setEmptyFields([]);
-      dispatch({ type: "CREATE_FILE", payload: json });
-    }
+  const handleExtract = async (e) => {
+    e.preventDefault();
+
+    const response = await fetch("http://localhost:4000/extract", {
+      method: "GET",
+    });
+    console.log("response: ", response);
+  };
+
+  const handleFileChange = (e) => {
+    const img = {
+      preview: URL.createObjectURL(e.target.files[0]),
+      data: e.target.files[0],
+    };
+    setImage(img);
   };
 
   return (
-    <button onClick={handleSubmit}>Add File</button>
-    // <form className="create" onSubmit={handleSubmit}>
-    //   <h3>Add a New File</h3>
+    <div className="TODO-form-styles">
+      <h1>Upload to server</h1>
+      {image.preview && <img src={image.preview} width="100" height="100" />}
+      <hr></hr>
+      <form onSubmit={handleSubmit}>
+        <input type="file" name="file" onChange={handleFileChange}></input>
+        <button type="submit">Submit</button>
+      </form>
+      {status && <h4>{status}</h4>}
 
-    //   <label>File Title:</label>
-    //   <input
-    //     type="text"
-    //     onChange={(e) => setTitle(e.target.value)}
-    //     value={title}
-    //     className={emptyFields.includes("title") ? "error" : ""}
-    //   />
-
-    //   <button>Add File</button>
-    //   {error && <div className="error">{error}</div>}
-    // </form>
+      <button onClick={handleExtract}>Extract</button>
+    </div>
   );
 };
 

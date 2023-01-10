@@ -2,6 +2,8 @@ import Head from "next/head";
 import Image from "next/image";
 import React, { useState } from "react";
 import { useAuthContext } from "./../hooks/useAuthContext";
+import FileForm from "./../components/FileForm";
+
 export const BASE_URL =
   process.env.NODE_ENV === "production"
     ? // ? process.env.API_URL
@@ -14,67 +16,6 @@ export default function Home() {
 
   const [apiOutput, setApiOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const basePromptPrefix = `
-I talk to a famous psychologist who is also the my best  friend.
-I am an adoult women have some times a depression.
-I ask the friend to advise me how to recover after a particular situation
-Give me the answer of my friend in 1st person, in informal way about the following situation, 
-Situation: 
-`;
-
-  const callGenerateEndpoint = async () => {
-    setIsGenerating(true);
-
-    console.log("Calling OpenAI...");
-    const response = await fetch(`/api/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userInput }),
-    });
-
-    const data = await response.json();
-    const { output } = data;
-    console.log("OpenAI replied...", output.text);
-
-    setApiOutput(`${output.text}`);
-    setIsGenerating(false);
-  };
-
-  const getSummary = async () => {
-    // setIsLoading(true)
-    // setError(null)
-    console.log("!!!userInput..", userInput);
-
-    const response = await fetch(`${BASE_URL}/api/openai`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userInput }),
-    });
-    const json = await response.json();
-
-    if (!response.ok) {
-      // setIsLoading(false)
-      // setError(json.error)
-      console.log("!!!!response not ok Error:", json.error);
-    }
-    if (response.ok) {
-      console.log("res json: ", JSON.stringify(json));
-
-      // // update the auth context
-      // dispatch({type: 'LOGIN', payload: json})
-
-      // // update loading state
-      // setIsLoading(false)
-    }
-  };
-
-  const onUserChangedText = (event) => {
-    console.log(event.target.value);
-    setUserInput(event.target.value);
-  };
 
   let fileReader;
 
@@ -104,8 +45,8 @@ Situation:
           const json = await response.json();
 
           if (!response.ok) {
-            setIsLoading(false);
-            setError(json.error);
+            setIsGenerating(false);
+            // setError(json.error);
             console.log("!!!!response not ok Error:", json.error);
           }
           if (response.ok) {
@@ -120,7 +61,7 @@ Situation:
           setIsGenerating(false);
         }
 
-        if (index > 0 && index < 25) {
+        if (index > 0 && index < 5) {
           const response = await fetch(`${BASE_URL}/api/openai`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -134,8 +75,8 @@ Situation:
           const json = await response.json();
 
           if (!response.ok) {
-            setIsLoading(false);
-            setError(json.error);
+            setIsGenerating(false);
+            // setError(json.error);
             console.log("!!!!response not ok Error:", json.error);
           }
           if (response.ok) {
@@ -155,57 +96,37 @@ Situation:
     );
   };
 
-  const w1_handleFileRead = async (e) => {
-    const content = fileReader.result;
-
-    const contentArray = content.match(/[\s\S]{1,3000}/g);
-    console.log("!!! contentArray.length:", contentArray.length);
-    console.log("contentArray[0] ", contentArray[2]);
-    setApiOutput("");
-
-    // this is the starting fragment of a large document. tell me what type of document it is and give me a summary
-
-    return;
-
-    // … do something with the 'content' …
-
-    const results = await Promise.all(
-      contentArray.map(async (chunk, index) => {
-        if (index < 5) {
-          const response = await fetch(`${BASE_URL}/api/openai`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userInput: chunk.replace(/(\r\n|\n|\r)/gm, ""),
-            }),
-          });
-          const json = await response.json();
-
-          if (!response.ok) {
-            setIsLoading(false);
-            setError(json.error);
-            console.log("!!!!response not ok Error:", json.error);
-          }
-          if (response.ok) {
-            console.log("res json: ", JSON.stringify(json));
-          }
-
-          const { output } = json;
-          console.log("OpenAI replied...", output.text);
-
-          setApiOutput((prev) => `${prev} ${output.text}`);
-          setIsGenerating(false);
-        }
-
-        return chunk;
-      })
-    );
-  };
-
   const handleFileChosen = (file) => {
     fileReader = new FileReader();
     fileReader.onloadend = handleFileRead;
     fileReader.readAsText(file);
+  };
+
+  const handlePDFExtract = async (e) => {
+    e.preventDefault();
+    setApiOutput("");
+    setIsGenerating(true);
+    const response = await fetch("http://localhost:4000/extract", {
+      method: "GET",
+    });
+
+    const json = await response.json();
+
+    if (!response.ok) {
+      setIsGenerating(false);
+      // setError(json.error);
+      console.log("!!!!response not ok Error:", json.error);
+    }
+    if (response.ok) {
+      console.log("res json: ", JSON.stringify(json));
+    }
+
+    const { output } = json;
+    console.log("OpenAI replied...", output);
+
+    // setApiOutput((prev) => `${prev} ${output.text}`);
+    setApiOutput(output);
+    setIsGenerating(false);
   };
 
   return (
@@ -231,23 +152,6 @@ Situation:
         />
 
         <div className="prompt-container">
-          {/* <div className="prompt-buttons">
-            <a
-              className={
-                isGenerating ? "generate-button loading" : "generate-button"
-              }
-              onClick={getSummary}
-            >
-              <div className="generate">
-                {isGenerating ? (
-                  <span class="loader"></span>
-                ) : (
-                  <p>Generate Summary</p>
-                )}
-              </div>
-            </a>
-          </div> */}
-
           {/* New code I added here */}
           {apiOutput && (
             <div className="output">
@@ -257,10 +161,13 @@ Situation:
                 </div>
               </div>
               <div className="output-content">
-                <p contenteditable="true">{apiOutput}</p>
+                <p contentEditable="true">{apiOutput}</p>
               </div>
             </div>
           )}
+        </div>
+        <div className="generate-button">
+          <button onClick={handlePDFExtract}>PDF demo</button>
         </div>
       </div>
     </div>
