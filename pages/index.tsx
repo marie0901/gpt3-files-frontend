@@ -7,7 +7,7 @@ import FileForm from "./../components/FileForm";
 export const BASE_URL =
   process.env.NODE_ENV === "production"
     ? // ? process.env.API_URL
-      "https://gpt3-files-backend.herokuapp.com"
+      "https://gpt3summary-backend.herokuapp.com"
     : "http://localhost:4000";
 
 export default function Home() {
