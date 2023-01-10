@@ -106,7 +106,7 @@ export default function Home() {
     e.preventDefault();
     setApiOutput("");
     setIsGenerating(true);
-    const response = await fetch("http://localhost:4000/extract", {
+    const response = await fetch(`${BASE_URL}/extract`, {
       method: "GET",
     });
 
