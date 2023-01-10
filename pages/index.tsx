@@ -4,11 +4,11 @@ import React, { useState } from "react";
 import { useAuthContext } from "./../hooks/useAuthContext";
 import FileForm from "./../components/FileForm";
 
-export const BASE_URL =
-  process.env.NODE_ENV === "production"
-    ? // ? process.env.API_URL
-      "https://gpt3summary-backend.herokuapp.com"
-    : "http://localhost:4000";
+export const BASE_URL = "https://gpt3summary-backend.herokuapp.com";
+// process.env.NODE_ENV === "production"
+//   ? // ? process.env.API_URL
+//     "https://gpt3summary-backend.herokuapp.com"
+//   : "http://localhost:4000";
 
 export default function Home() {
   const { user } = useAuthContext();
