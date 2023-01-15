@@ -105,7 +105,7 @@ export default function Home() {
       // application/pdf
       let formData = new FormData();
       formData.append("file", file);
-      const response = await fetch("http://localhost:4000/api/files/summary", {
+      const response = await fetch(`${BASE_URL}/api/files/summary`, {
         method: "POST",
         body: formData,
       });
