@@ -2,17 +2,16 @@ import Head from "next/head";
 import Image from "next/image";
 import React, { useState } from "react";
 import { useAuthContext } from "./../hooks/useAuthContext";
-import FileForm from "./../components/FileForm";
+// import FileForm from "./../components/FileForm";
 
-export const BASE_URL = "https://gpt3summary-backend.herokuapp.com";
-// process.env.NODE_ENV === "production"
-//   ? // ? process.env.API_URL
-//     "https://gpt3summary-backend.herokuapp.com"
-//   : "http://localhost:4000";
+export const BASE_URL =
+  process.env.NODE_ENV === "production"
+    ? // ? process.env.API_URL
+      "https://gpt3summary-backend.herokuapp.com"
+    : "http://localhost:4000";
 
 export default function Home() {
   const { user } = useAuthContext();
-  const [userInput, setUserInput] = useState("");
 
   const [apiOutput, setApiOutput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -77,7 +76,7 @@ export default function Home() {
           if (!response.ok) {
             setIsGenerating(false);
             // setError(json.error);
-            console.log("!!!!response not ok Error:", json.error);
+            console.log("Response not ok Error:", json.error);
           }
           if (response.ok) {
             console.log("res json: ", JSON.stringify(json));
@@ -96,10 +95,39 @@ export default function Home() {
     );
   };
 
-  const handleFileChosen = (file) => {
+  const handleFileChosen = async (file) => {
+    console.log("file", file);
     fileReader = new FileReader();
-    fileReader.onloadend = handleFileRead;
-    fileReader.readAsText(file);
+    if (file.type == "text/plain") {
+      fileReader.onloadend = handleFileRead;
+      fileReader.readAsText(file);
+    } else {
+      // application/pdf
+      let formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("http://localhost:4000/api/files/summary", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response) {
+        console.log("Error fatching api/files/summary");
+      }
+      const json = await response.json();
+      console.log("!!!!response.json", json);
+      if (!response.ok) {
+        setIsGenerating(false);
+        // setError(json.error);
+        console.log("Response not ok Error:", json.error);
+      }
+      if (response.ok) {
+        console.log("res json: ", JSON.stringify(json));
+      }
+
+      const output = json;
+      console.log("OpenAI replied...", output);
+      setApiOutput(output);
+      setIsGenerating(false);
+    }
   };
 
   const handlePDFExtract = async (e) => {
@@ -115,7 +143,7 @@ export default function Home() {
     if (!response.ok) {
       setIsGenerating(false);
       // setError(json.error);
-      console.log("!!!!response not ok Error:", json.error);
+      console.log("Response not ok Error:", json.error);
     }
     if (response.ok) {
       console.log("res json: ", JSON.stringify(json));
@@ -123,8 +151,6 @@ export default function Home() {
 
     const { output } = json;
     console.log("OpenAI replied...", output);
-
-    // setApiOutput((prev) => `${prev} ${output.text}`);
     setApiOutput(output);
     setIsGenerating(false);
   };
@@ -147,7 +173,7 @@ export default function Home() {
           className={
             isGenerating ? "generate-button loading" : "generate-button"
           }
-          accept=".txt"
+          accept=".txt,.pdf"
           onChange={(e) => handleFileChosen(e.target.files[0])}
         />
 
@@ -161,13 +187,12 @@ export default function Home() {
                 </div>
               </div>
               <div className="output-content">
-                <p contentEditable="true">{apiOutput}</p>
+                <p contentEditable="true" suppressContentEditableWarning="true">
+                  {apiOutput}
+                </p>
               </div>
             </div>
           )}
-        </div>
-        <div className="generate-button">
-          <button onClick={handlePDFExtract}>PDF demo</button>
         </div>
       </div>
     </div>
