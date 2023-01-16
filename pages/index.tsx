@@ -163,7 +163,7 @@ export default function Home() {
             <h1>Get summary of your document</h1>
           </div>
           <div className="header-subtitle">
-            <h2>Upload txt file and get the summary of the content</h2>
+            <h2>Upload TXT or PDF file and get the summary of the content</h2>
           </div>
         </div>
 
